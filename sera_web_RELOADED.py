@@ -1,10 +1,11 @@
-# Sera-Bilgin Arşiv Sistemi - v42.1 (Path Fix)
+# Sera-Bilgin Arşiv Sistemi - v86 (Cache Fix)
 import streamlit as st
 import hashlib
 import os
 import pandas as pd
 import io
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from sera_core import (
     db_init, get_db_connection, tr_lower, tr_normalize, 
@@ -297,7 +298,7 @@ def apply_antigravity_styles():
     st.markdown("<div class='st-footer'>Powered By Nurettin ÖZCAN</div>", unsafe_allow_html=True)
 
 apply_antigravity_styles()
-st.sidebar.code("v80 - SERA.AI 👁️ - " + datetime.now().strftime("%H:%M:%S"))
+st.sidebar.code("v86 - SERA.AI 👁️ - " + datetime.now().strftime("%H:%M:%S"))
 
 with st.sidebar.expander("🔍 Model Keşif Paneli"):
     if st.button("Mevcut Modelleri Listele"):
@@ -699,13 +700,12 @@ else:
             df_kasalar = pd.read_sql_query("SELECT id, kasa_adi, owner_username, bakiye FROM kasalar", conn).fillna(0)
             conn.close()
             
-            with st.form("kasa_giris_form"):
+            with st.form("kasa_giris_form_v86"):
                 selected_kasa = st.selectbox("🎯 Hedef Kasa Seçin", options=df_kasalar['kasa_adi'].tolist())
                 giris_tutari = st.number_input("💰 Giriş Tutarı (TL)", min_value=1.0, step=100.0)
                 aciklama = st.text_input("📝 İşlem Açıklaması", value="Kasa Girişi")
-                st.markdown('<div class="giris-btn">', unsafe_allow_html=True)
+                # v85: Submit butonunu div dışına çıkar (Missing Submit Button fix)
                 submit = st.form_submit_button("💚 Kasa Girişi", use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
                 
                 if submit:
                     target_user = df_kasalar[df_kasalar['kasa_adi'] == selected_kasa]['owner_username'].iloc[0]
@@ -734,7 +734,7 @@ else:
             df_kasalar_c = pd.read_sql_query("SELECT id, kasa_adi, owner_username, bakiye FROM kasalar", conn).fillna(0)
             conn.close()
 
-            with st.form("kasa_cikis_form"):
+            with st.form("kasa_cikis_form_v86"):
                 col1, col2 = st.columns(2)
                 with col1:
                     selected_kasa_c = st.selectbox("🎯 Hedef Kasa Seçin", options=df_kasalar_c['kasa_adi'].tolist(), key="cikis_kasa")
@@ -748,9 +748,8 @@ else:
                     secilen_bakiye = df_kasalar_c[df_kasalar_c['kasa_adi'] == selected_kasa_c]['bakiye'].iloc[0]
                     st.info(f"ℹ️ Seçili Kasa Güncel Bakiyesi: **{secilen_bakiye:,.2f} TL**")
                 
-                st.markdown('<div class="cikis-btn">', unsafe_allow_html=True)
+                # v85: Submit butonunu div dışına çıkar
                 submit_c = st.form_submit_button("🔴 Kasa Çıkışı Yap", use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
 
                 if submit_c:
                     target_user_c = df_kasalar_c[df_kasalar_c['kasa_adi'] == selected_kasa_c]['owner_username'].iloc[0]
@@ -918,18 +917,20 @@ else:
                         
                         with m2:
                             if not k_masraf.empty:
-                                # v83: Narwhals/Plotly 6+ ve Python 3.14 uyumluluk fix
+                                # v85: Narwhals Hatası için Plotly Graph Objects (GO) Geçişi
                                 try:
-                                    # Veriyi açıkça kopyalayıp sayısal değerleri garanti et
                                     k_plot_df = k_masraf[['tutar', 'kategori']].copy()
                                     k_plot_df['tutar'] = pd.to_numeric(k_plot_df['tutar'], errors='coerce').fillna(0)
-                                    
-                                    # Gruplayarak veriyi küçült ve Narwhals'ın kafasını karıştırmaktan kaçın
-                                    k_plot_summary = k_plot_df.groupby('kategori', as_index=False)['tutar'].sum()
+                                    k_plot_summary = k_plot_df.groupby('kategori')['tutar'].sum().reset_index()
                                     
                                     if not k_plot_summary.empty and k_plot_summary['tutar'].sum() > 0:
-                                        fig_k = px.pie(k_plot_summary, values='tutar', names='kategori', 
-                                                      hole=0.6, color_discrete_sequence=px.colors.sequential.Tealgrn)
+                                        fig_k = go.Figure(data=[go.Pie(
+                                            labels=k_plot_summary['kategori'],
+                                            values=k_plot_summary['tutar'],
+                                            hole=.6,
+                                            marker=dict(colors=px.colors.sequential.Tealgrn),
+                                            textinfo='none' # İçeride metin olmasın, küçük alan
+                                        )])
                                         fig_k.update_layout(
                                             showlegend=False, height=150, margin=dict(t=0, b=0, l=0, r=0),
                                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -937,10 +938,9 @@ else:
                                         )
                                         st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
                                     else:
-                                        st.caption("Veri grafiğe uygun değil.")
+                                        st.caption("Grafik için veri yetersiz.")
                                 except Exception as pie_err:
-                                    st.error(f"Grafik Hatası: {pie_err}")
-                                    st.caption("Veri yapısı uyumsuz (Python 14?).")
+                                    st.error(f"GO Hatası: {pie_err}")
                             else:
                                 st.caption("Henüz harcama verisi yok.")
                                 
@@ -970,10 +970,14 @@ else:
                     try:
                         k_dist = df_masraflar[['tutar', 'kategori']].copy()
                         k_dist['tutar'] = pd.to_numeric(k_dist['tutar'], errors='coerce').fillna(0)
-                        k_dist_summary = k_dist.groupby('kategori', as_index=False)['tutar'].sum()
+                        k_dist_summary = k_dist.groupby('kategori')['tutar'].sum().reset_index()
                         
-                        fig_pie = px.pie(k_dist_summary, values='tutar', names='kategori', 
-                                        hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
+                        fig_pie = go.Figure(data=[go.Pie(
+                            labels=k_dist_summary['kategori'],
+                            values=k_dist_summary['tutar'],
+                            hole=0.4,
+                            marker=dict(colors=px.colors.sequential.RdBu)
+                        )])
                         fig_pie.update_layout(
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color="white"),
@@ -981,22 +985,26 @@ else:
                         )
                         st.plotly_chart(fig_pie, use_container_width=True)
                     except Exception as e:
-                        st.error(f"Grafik Hatası: {e}")
+                        st.error(f"Genel Grafik Hatası: {e}")
 
                 with g2:
                     st.markdown("##### 📈 Aylık Harcama Trendi")
                     try:
-                        # v84: Trend grafiği için veri normalizasyonu
                         trend_df = df_masraflar[['harcama_tarihi', 'tutar']].copy()
                         trend_df['harcama_tarihi'] = pd.to_datetime(trend_df['harcama_tarihi'])
                         trend_df['ay_yil'] = trend_df['harcama_tarihi'].dt.strftime('%Y-%m')
                         trend_df['tutar'] = pd.to_numeric(trend_df['tutar'], errors='coerce').fillna(0)
                         
-                        aylik_harcama = trend_df.groupby('ay_yil', as_index=False)['tutar'].sum().sort_values('ay_yil')
+                        aylik_harcama = trend_df.groupby('ay_yil')['tutar'].sum().reset_index().sort_values('ay_yil')
                         
                         if not aylik_harcama.empty:
-                            fig_line = px.line(aylik_harcama, x='ay_yil', y='tutar', markers=True,
-                                              color_discrete_sequence=['#22D3EE'])
+                            fig_line = go.Figure(data=go.Scatter(
+                                x=aylik_harcama['ay_yil'],
+                                y=aylik_harcama['tutar'],
+                                mode='lines+markers',
+                                line=dict(color='#22D3EE', width=3),
+                                marker=dict(size=8)
+                            ))
                             fig_line.update_layout(
                                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                                 yaxis_title="TL", xaxis_title="Ay",
@@ -1007,7 +1015,7 @@ else:
                         else:
                             st.caption("Trend verisi bulunamadı.")
                     except Exception as e:
-                        st.error(f"Trend Hatası: {e}")
+                        st.error(f"Trend GO Hatası: {e}")
             else:
                 st.info("Henüz grafik oluşturulacak kadar masraf verisi bulunmuyor.")
             
