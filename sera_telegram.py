@@ -59,15 +59,16 @@ async def show_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.effective_user.id)
     user_data = get_user_by_telegram_id(uid)
     
-    print(f"DEBUG: Bakiye sorgusu. UID: {uid}")
+    print(f"DEBUG v88: Bakiye sorgusu. UID: {uid}")
     if user_data:
-        username = user_data[0]
-        name = user_data[1]
+        username, name, role = user_data
         bakiye = get_current_balance(username)
-        await update.message.reply_text(f"💰 **{name}**, güncel kasan: `{bakiye:,.2f} TL`", parse_mode="Markdown")
+        print(f"DEBUG v88: Kullanici:{username} Bakiye:{bakiye}")
+        await update.message.reply_text(f"💰 **{name} (v88)**\nKullanıcı: `{username}`\nGüncel Kasan: `{bakiye:,.2f} TL`", parse_mode="Markdown")
     else:
+        print(f"DEBUG v88: Kayitsiz Kullanici UID: {uid}")
         bakiye = get_current_balance()
-        await update.message.reply_text(f"🏦 **Toplam Kasa Bakiyesi:** `{bakiye:,.2f} TL`", parse_mode="Markdown")
+        await update.message.reply_text(f"🏦 **Toplam Sistem Kasası (v88):** `{bakiye:,.2f} TL`", parse_mode="Markdown")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (

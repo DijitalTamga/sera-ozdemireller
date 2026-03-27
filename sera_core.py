@@ -242,7 +242,8 @@ def notify_user_telegram(username, amount, desc="Kasa Girişi"):
         if user_res and user_res[0]:
             tid = user_res[0]
             name = user_res[1]
-            token = os.getenv("TELEGRAM_BOT_TOKEN")
+            # v88:_get_secret ile her ortamda (Local/Cloud) tokeni bul
+            token = _get_secret("TELEGRAM_BOT_TOKEN")
             if not token: 
                 log_activity(f"Bildirim Hatasi: BOT_TOKEN eksik", "ERROR")
                 return False
@@ -675,12 +676,17 @@ def gemini_v45_expense_analyze(text, image_data=None):
     prompt = f"""
     Sen bir harcama analiz uzmanısın. Ekteki görseli (veya metni) incele. 
     İşletme adını, fiş tarihini ve toplam tutarı ayıkla.
-    SADECE geçerli bir JSON fomatında döndür.
+    
+    KURALLAR:
+    1. Tutar hanesinde virgül (,) varsa nokta (.) olarak düşün. (Örn: 350,50 -> 350.50)
+    2. SADECE sayısal tutarı döndür, TL yazma.
+    3. JSON formatı DıŞıNDA hiçbir metin ekleme.
+    
     JSON yapısı:
     {{
       "isletme_adi": "İşletme adı",
       "tarih": "YYYY-MM-DD",
-      "tutar": "Sayısal değer (Örn: 350.50)",
+      "tutar": 350.50,
       "kategori": "Yemek, Akaryakıt, Konaklama, Muhtelif seçeneklerinden biri"
     }}
     
