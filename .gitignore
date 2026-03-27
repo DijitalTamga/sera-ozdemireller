@@ -1,35 +1,79 @@
-# Gizli Bilgiler - ASLA GitHub'a gönderme
+# Gizli Bilgiler
 .env
 *.env
 
-# Python
+# Streamlit Secrets (örneği değil, gerçek dosyayı dışla)
+.streamlit/secrets.toml
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
 
 # Log dosyaları
 *.log
-sera_sistem.log
-sera_error.log
 
-# Geçici dosyalar
-*.tmp
-*.temp
-
-# Windows klasör dosyaları
-Thumbs.db
-desktop.ini
-
-# PyInstaller EXE (dev içinde gerek yok)
+# Windows DLL ve EXE dosyaları (PyInstaller _internal)
+*.dll
+*.pyd
+*.exe
 *.spec
+
+# Windows'a özel derlenmiş Python paketleri (PyInstaller çıktısı)
+pandas/
+pandas.libs/
+numpy/
+numpy.libs/
+numpy-*/
+streamlit/
+streamlit-*/
+plotly/
+plotly-*/
+PIL/
+altair/
+google/
+certifi/
+charset_normalizer/
+click-*/
+cryptography/
+cryptography-*/
+dateutil/
+jsonschema/
+jsonschema-*/
+jsonschema_specifications/
+lxml/
+markupsafe/
+markupsafe-*/
+pyarrow/
+pyarrow.libs/
+pytz/
+rpds/
+tornado/
+tzdata/
+setuptools/
+attrs-*/
+pandas-*/
+streamlit-1*/
+click-*/
+
+# Build çıktıları
 build/
 dist/
+base_library.zip
 
-# Veritabanı - İSTEĞE BAĞLI (seed DB okla)
-# arsiv_hafizasi.db  <- Bunu push ET (seed data için)
+# Büyük ikili dosyalar
+*.zip
+libcrypto-*.dll
+libssl-*.dll
+libffi-*.dll
+ucrtbase.dll
+python3*.dll
+sqlite3.dll
+unicodedata.pyd
+VCRUNTIME*.dll
+api-ms-win-*.dll
 
-# Büyük dosyalar
+# Arsiv klasörü (büyük dosyalar)
 arsiv/
 masraf_arsivi.xlsx
