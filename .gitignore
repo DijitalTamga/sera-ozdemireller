@@ -1,0 +1,35 @@
+# Gizli Bilgiler - ASLA GitHub'a gönderme
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Log dosyaları
+*.log
+sera_sistem.log
+sera_error.log
+
+# Geçici dosyalar
+*.tmp
+*.temp
+
+# Windows klasör dosyaları
+Thumbs.db
+desktop.ini
+
+# PyInstaller EXE (dev içinde gerek yok)
+*.spec
+build/
+dist/
+
+# Veritabanı - İSTEĞE BAĞLI (seed DB okla)
+# arsiv_hafizasi.db  <- Bunu push ET (seed data için)
+
+# Büyük dosyalar
+arsiv/
+masraf_arsivi.xlsx
