@@ -918,14 +918,29 @@ else:
                         
                         with m2:
                             if not k_masraf.empty:
-                                fig_k = px.pie(k_masraf, values='tutar', names='kategori', 
-                                              hole=0.6, color_discrete_sequence=px.colors.sequential.Tealgrn)
-                                fig_k.update_layout(
-                                    showlegend=False, height=150, margin=dict(t=0, b=0, l=0, r=0),
-                                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                    font=dict(color="white")
-                                )
-                                st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
+                                # v83: Narwhals/Plotly 6+ ve Python 3.14 uyumluluk fix
+                                try:
+                                    # Veriyi açıkça kopyalayıp sayısal değerleri garanti et
+                                    k_plot_df = k_masraf[['tutar', 'kategori']].copy()
+                                    k_plot_df['tutar'] = pd.to_numeric(k_plot_df['tutar'], errors='coerce').fillna(0)
+                                    
+                                    # Gruplayarak veriyi küçült ve Narwhals'ın kafasını karıştırmaktan kaçın
+                                    k_plot_summary = k_plot_df.groupby('kategori', as_index=False)['tutar'].sum()
+                                    
+                                    if not k_plot_summary.empty and k_plot_summary['tutar'].sum() > 0:
+                                        fig_k = px.pie(k_plot_summary, values='tutar', names='kategori', 
+                                                      hole=0.6, color_discrete_sequence=px.colors.sequential.Tealgrn)
+                                        fig_k.update_layout(
+                                            showlegend=False, height=150, margin=dict(t=0, b=0, l=0, r=0),
+                                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                            font=dict(color="white")
+                                        )
+                                        st.plotly_chart(fig_k, use_container_width=True, config={'displayModeBar': False})
+                                    else:
+                                        st.caption("Veri grafiğe uygun değil.")
+                                except Exception as pie_err:
+                                    st.error(f"Grafik Hatası: {pie_err}")
+                                    st.caption("Veri yapısı uyumsuz (Python 14?).")
                             else:
                                 st.caption("Henüz harcama verisi yok.")
                                 
@@ -948,33 +963,51 @@ else:
                 
                 st.divider()
                 
-                # Grafik Alanı
+                # Grafik Alanı (v84: Plotly 6+ & Python 3.14 Fix)
                 g1, g2 = st.columns(2)
                 with g1:
                     st.markdown("##### 🍰 Kategori Dağılımı")
-                    fig_pie = px.pie(df_masraflar, values='tutar', names='kategori', 
-                                    hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
-                    fig_pie.update_layout(
-                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color="white"),
-                        legend=dict(font=dict(color="white"))
-                    )
-                    st.plotly_chart(fig_pie, use_container_width=True)
-                
+                    try:
+                        k_dist = df_masraflar[['tutar', 'kategori']].copy()
+                        k_dist['tutar'] = pd.to_numeric(k_dist['tutar'], errors='coerce').fillna(0)
+                        k_dist_summary = k_dist.groupby('kategori', as_index=False)['tutar'].sum()
+                        
+                        fig_pie = px.pie(k_dist_summary, values='tutar', names='kategori', 
+                                        hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
+                        fig_pie.update_layout(
+                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color="white"),
+                            legend=dict(font=dict(color="white"))
+                        )
+                        st.plotly_chart(fig_pie, use_container_width=True)
+                    except Exception as e:
+                        st.error(f"Grafik Hatası: {e}")
+
                 with g2:
                     st.markdown("##### 📈 Aylık Harcama Trendi")
-                    # Tarih formatını ay/yıl yapalım
-                    df_masraflar['ay_yil'] = pd.to_datetime(df_masraflar['harcama_tarihi']).dt.strftime('%Y-%m')
-                    df_trend = df_masraflar.groupby('ay_yil')['tutar'].sum().reset_index()
-                    fig_line = px.line(df_trend, x='ay_yil', y='tutar', markers=True, 
-                                      line_shape='spline', render_mode='svg')
-                    fig_line.update_layout(
-                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color="white"),
-                        xaxis=dict(gridcolor='rgba(255,255,255,0.1)', tickfont=dict(color="white")),
-                        yaxis=dict(gridcolor='rgba(255,255,255,0.1)', tickfont=dict(color="white"))
-                    )
-                    st.plotly_chart(fig_line, use_container_width=True)
+                    try:
+                        # v84: Trend grafiği için veri normalizasyonu
+                        trend_df = df_masraflar[['harcama_tarihi', 'tutar']].copy()
+                        trend_df['harcama_tarihi'] = pd.to_datetime(trend_df['harcama_tarihi'])
+                        trend_df['ay_yil'] = trend_df['harcama_tarihi'].dt.strftime('%Y-%m')
+                        trend_df['tutar'] = pd.to_numeric(trend_df['tutar'], errors='coerce').fillna(0)
+                        
+                        aylik_harcama = trend_df.groupby('ay_yil', as_index=False)['tutar'].sum().sort_values('ay_yil')
+                        
+                        if not aylik_harcama.empty:
+                            fig_line = px.line(aylik_harcama, x='ay_yil', y='tutar', markers=True,
+                                              color_discrete_sequence=['#22D3EE'])
+                            fig_line.update_layout(
+                                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                yaxis_title="TL", xaxis_title="Ay",
+                                font=dict(color="white"),
+                                xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)')
+                            )
+                            st.plotly_chart(fig_line, use_container_width=True)
+                        else:
+                            st.caption("Trend verisi bulunamadı.")
+                    except Exception as e:
+                        st.error(f"Trend Hatası: {e}")
             else:
                 st.info("Henüz grafik oluşturulacak kadar masraf verisi bulunmuyor.")
             

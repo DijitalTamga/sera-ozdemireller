@@ -690,7 +690,7 @@ def gemini_v45_expense_analyze(text, image_data=None):
     Eğer bilgiyi bulamazsan null yerine en yakın tahmini yap veya 'Bilinmiyor' yaz.
     """
     
-    # Metod 1: SDK (v66: 2.5-flash + Base64 Manual Part)
+    # Metod 1: SDK (v66: 1.5-flash + Base64 Manual Part)
     raw_ans = ""
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
@@ -700,25 +700,23 @@ def gemini_v45_expense_analyze(text, image_data=None):
             import base64
             img_b64 = base64.b64encode(image_data).decode('utf-8')
             mime = "application/pdf" if image_data.startswith(b"%PDF") else "image/jpeg"
-            
-            # v66: En uyumlu manuel part yapısı
             parts.append(types.Part.from_bytes(data=image_data, mime_type=mime))
         
         parts.append(types.Part.from_text(text=prompt))
         
-        # v66: Listede görünen en güncel model (gemini-2.5-flash)
+        # v66: En stabil model (gemini-1.5-flash)
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=parts,
             config=types.GenerateContentConfig(temperature=0.0)
         )
         raw_ans = response.text
     except Exception as e:
         print(f"v66 SDK Hatası: {e}")
-        # Metod 2: Backup model (gemini-2.0-flash)
+        # Metod 2: Backup model (gemini-2.0-flash-exp)
         try:
             response = client.models.generate_content(
-                model='gemini-2.0-flash',
+                model='gemini-2.0-flash-exp',
                 contents=parts,
                 config=types.GenerateContentConfig(temperature=0.0)
             )
