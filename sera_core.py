@@ -675,25 +675,23 @@ def gemini_v45_expense_analyze(text, image_data=None):
     
     prompt = f"""
     Sen bir harcama analiz uzmanısın. Ekteki görseli (veya metni) incele. 
-    İşletme adını, fiş tarihini ve toplam tutarı ayıkla.
+    İşletme adını, fiş tarihini ve toplam tutarı ayıklayıp JSON döndür.
     
-    KURALLAR:
-    1. Tutar hanesinde virgül (,) varsa nokta (.) olarak düşün. (Örn: 350,50 -> 350.50)
-    2. SADECE sayısal tutarı döndür, TL yazma.
-    3. JSON formatı DıŞıNDA hiçbir metin ekleme.
+    ÖNEMLİ KURALLAR:
+    1. Faturadaki tutar virgüllü ise (Örn: 350,00) bunu MUTLAKA noktaya çevir (350.00).
+    2. Eğer metinde "390,00 TL" gibi büyük veya net bir tutar görüyorsan onu al.
+    3. JSON içinde "tutar" alanı MUTLAKA sayı (number) olmalı, string olmamalı.
     
-    JSON yapısı:
+    JSON formatı:
     {{
-      "isletme_adi": "İşletme adı",
+      "isletme_adi": "İşletme Adı",
       "tarih": "YYYY-MM-DD",
-      "tutar": 350.50,
-      "kategori": "Yemek, Akaryakıt, Konaklama, Muhtelif seçeneklerinden biri"
+      "tutar": 390.00,
+      "kategori": "Akaryakıt, Yemek, Konaklama, Muhtelif seçeneklerinden biri"
     }}
     
     Aşağıdaki örnekler senin geçmişte yaptığın hatalardan öğrenmen içindir:
     {examples}
-    
-    Eğer bilgiyi bulamazsan null yerine en yakın tahmini yap veya 'Bilinmiyor' yaz.
     """
     
     # Metod 1: SDK (v66: 1.5-flash + Base64 Manual Part)
