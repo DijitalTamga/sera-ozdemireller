@@ -1,4 +1,4 @@
-# Sera-Bilgin Arşiv Sistemi - v86 (Cache Fix)
+# Sera-Bilgin Arşiv Sistemi - v89 (Trend Fix)
 import streamlit as st
 import hashlib
 import os
@@ -298,7 +298,7 @@ def apply_antigravity_styles():
     st.markdown("<div class='st-footer'>Powered By Nurettin ÖZCAN</div>", unsafe_allow_html=True)
 
 apply_antigravity_styles()
-st.sidebar.code("v86 - SERA.AI 👁️ - " + datetime.now().strftime("%H:%M:%S"))
+st.sidebar.code("v89 - SERA.AI 👁️ - " + datetime.now().strftime("%H:%M:%S"))
 
 with st.sidebar.expander("🔍 Model Keşif Paneli"):
     if st.button("Mevcut Modelleri Listele"):
@@ -991,7 +991,9 @@ else:
                     st.markdown("##### 📈 Aylık Harcama Trendi")
                     try:
                         trend_df = df_masraflar[['harcama_tarihi', 'tutar']].copy()
-                        trend_df['harcama_tarihi'] = pd.to_datetime(trend_df['harcama_tarihi'])
+                        # v89: Geçersiz tarihleri (Örn: ?) temizle
+                        trend_df['harcama_tarihi'] = pd.to_datetime(trend_df['harcama_tarihi'], errors='coerce')
+                        trend_df = trend_df.dropna(subset=['harcama_tarihi'])
                         trend_df['ay_yil'] = trend_df['harcama_tarihi'].dt.strftime('%Y-%m')
                         trend_df['tutar'] = pd.to_numeric(trend_df['tutar'], errors='coerce').fillna(0)
                         
